@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>The Weird Peanut Clicker</title>
+    <title>The SUPER Weird Peanut Clicker</title>
     <style>
         body {
             background-color: #f0f8ff; /* AliceBlue */
@@ -32,8 +32,8 @@
         }
 
         h1 {
-            color: #8b4513; /* SaddleBrown */
-            text-shadow: 2px 2px #ffe4b5; /* Moccasin */
+            color: #8b4513;
+            text-shadow: 2px 2px #ffe4b5;
             font-size: 2.5em;
             animation: bounce 1s infinite;
         }
@@ -43,7 +43,7 @@
             justify-content: space-around;
             font-size: 1.5em;
             margin-bottom: 20px;
-            color: #4b0082; /* Indigo */
+            color: #4b0082;
         }
 
         .peanut-container {
@@ -83,8 +83,38 @@
         #message {
             font-size: 1.8em;
             font-weight: bold;
-            color: #d2691e; /* Chocolate */
+            color: #d2691e;
             text-shadow: 1px 1px #fff;
+        }
+
+        /* --- New CSS for improved game --- */
+        .combo-counter {
+            position: absolute;
+            top: 10px;
+            right: 10px;
+            font-size: 2em;
+            font-weight: bold;
+            color: #ff4500; /* OrangeRed */
+            text-shadow: 2px 2px #fff;
+            opacity: 0;
+            transition: opacity 0.5s ease-in-out;
+        }
+
+        .combo-active {
+            opacity: 1;
+        }
+        
+        .thief {
+            position: absolute;
+            bottom: -50px;
+            left: 50%;
+            transform: translateX(-50%);
+            animation: thiefSlideIn 2s forwards, thiefSteal 1s 2s forwards;
+            pointer-events: none;
+        }
+        
+        .thief-image {
+            width: 100px;
         }
 
         /* Animations */
@@ -107,7 +137,7 @@
             position: absolute;
             font-size: 2em;
             font-weight: bold;
-            color: #8b0000; /* DarkRed */
+            color: #8b0000;
             text-shadow: 1px 1px #fff;
             pointer-events: none;
             animation: float 1.5s ease-out forwards;
@@ -123,11 +153,23 @@
             50% { transform: translate(-5px, -5px) rotate(-2deg); }
             75% { transform: translate(5px, -5px) rotate(2deg); }
         }
+
+        @keyframes thiefSlideIn {
+            0% { bottom: -50px; }
+            100% { bottom: 20px; }
+        }
+
+        @keyframes thiefSteal {
+            0% { transform: translateX(-50%); }
+            50% { transform: translateX(-50%) scale(1.2); }
+            100% { transform: translateX(-50%) translateY(-1000px); opacity: 0; }
+        }
+
     </style>
 </head>
 <body>
     <div class="game-container">
-        <h1>🥜 The Weird Peanut Clicker 🥜</h1>
+        <h1>🥜 The SUPER Weird Peanut Clicker 🥜</h1>
         <div class="stats-container">
             <p>Score: <span id="score">0</span></p>
             <p>Clicks: <span id="clicks">0</span></p>
@@ -138,36 +180,63 @@
         <div class="message-container">
             <p id="message"></p>
         </div>
+        <div id="comboCounter" class="combo-counter"></div>
     </div>
+
     <script>
         document.addEventListener('DOMContentLoaded', () => {
             const peanut = document.getElementById('peanut');
             const scoreDisplay = document.getElementById('score');
             const clicksDisplay = document.getElementById('clicks');
             const messageDisplay = document.getElementById('message');
+            const comboCounter = document.getElementById('comboCounter');
             const gameContainer = document.querySelector('.game-container');
 
             let score = 0;
             let clicks = 0;
+            let comboCount = 0;
+            let lastClickTime = Date.now();
+            let clickMultiplier = 1;
 
             const weirdEvents = [
-                { message: "The peanut grows legs!", action: () => { peanut.style.width = '250px'; setTimeout(() => peanut.style.width = '200px', 2000); } },
-                { message: "Score doubles!", action: () => { score *= 2; updateScore(); } },
-                { message: "Oh no, you lose 10 score!", action: () => { score = Math.max(0, score - 10); updateScore(); } },
-                { message: "The peanut starts to glow!", action: () => { peanut.classList.add('weird-effect'); setTimeout(() => peanut.classList.remove('weird-effect'), 3000); } },
-                { message: "A mysterious voice whispers 'Peanut'", action: () => {  } },
-                { message: "Your clicks are now worth 2x!", action: () => { score += 2; updateScore(); createFloatingText('+2', event); } },
-                { message: "Nothing happens. Disappointing.", action: () => {  } }
+                { message: "A tiny peanut army appears!", action: () => { score += 50; updateScore(); showMessage('+50 score from the army!'); } },
+                { message: "A mysterious force multiplies your score!", action: () => { score *= 2; updateScore(); } },
+                { message: "Oh no! A Peanut Thief steals some of your score!", action: () => { score = Math.max(0, score - 50); updateScore(); showThief(); } },
+                { message: "The peanut power-up is active! Clicks are 5x!", action: () => { clickMultiplier = 5; showMessage('Clicks are 5x for 5 seconds!'); setTimeout(() => { clickMultiplier = 1; }, 5000); } },
+                { message: "The peanut turns into a pumpkin!", action: () => { peanut.src = 'https://em-content.zobj.net/source/microsoft-teams/337/jack-o-lantern_1f383.png'; showMessage('A pumpkin? How odd.'); setTimeout(() => peanut.src = 'https://em-content.zobj.net/source/microsoft-teams/337/peanuts_1f95c.png', 5000); } },
+                { message: "The game glitches! You gain 100 clicks!", action: () => { clicks += 100; updateScore(); } },
+                { message: "The peanut starts to levitate!", action: () => { peanut.style.animation = 'float 2s infinite ease-in-out'; setTimeout(() => peanut.style.animation = 'none', 5000); } }
             ];
 
             peanut.addEventListener('click', (event) => {
+                const currentTime = Date.now();
+                
+                // Combo Logic
+                if (currentTime - lastClickTime < 300) { // 300ms for a combo
+                    comboCount++;
+                } else {
+                    comboCount = 0;
+                }
+                lastClickTime = currentTime;
+
+                let points = 1 * clickMultiplier;
+                
+                // Combo bonus
+                if (comboCount > 2) {
+                    points += Math.floor(comboCount / 5);
+                    comboCounter.textContent = `COMBO x${comboCount}`;
+                    comboCounter.classList.add('combo-active');
+                } else {
+                    comboCounter.classList.remove('combo-active');
+                }
+
                 clicks++;
-                score++;
+                score += points;
                 updateScore();
-                createFloatingText('+1', event);
+                createFloatingText(`+${points}`, event);
                 
                 // Randomly trigger weird events
-                if (Math.random() < 0.15) { // 15% chance to trigger a weird event
+                if (Math.random() < 0.1) { // 10% chance
                     triggerWeirdEvent();
                 }
             });
@@ -182,7 +251,6 @@
                 floatingText.textContent = text;
                 floatingText.classList.add('floating-text');
                 
-                // Position the text near the click location
                 floatingText.style.left = `${event.clientX}px`;
                 floatingText.style.top = `${event.clientY}px`;
                 
@@ -203,7 +271,18 @@
                 messageDisplay.textContent = msg;
                 setTimeout(() => {
                     messageDisplay.textContent = '';
-                }, 3000);
+                }, 4000);
+            }
+
+            function showThief() {
+                const thief = document.createElement('img');
+                thief.src = 'https://em-content.zobj.net/source/microsoft-teams/337/mouse_1f401.png'; // Using a mouse for the thief
+                thief.classList.add('thief', 'thief-image');
+                gameContainer.appendChild(thief);
+
+                setTimeout(() => {
+                    thief.remove();
+                }, 4000);
             }
         });
     </script>
