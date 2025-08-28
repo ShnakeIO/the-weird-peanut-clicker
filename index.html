@@ -2,7 +2,7 @@
 <html lang="en">
 <head>
     <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no, shrink-to-fit=no">
     <title>The Weird Peanut Clicker</title>
     <style>
         body {
@@ -294,10 +294,6 @@
             let bossModeActive = false;
             let bossHealth = 0;
             const MAX_BOSS_HEALTH = 20;
-
-            // Prevent zooming on touch devices
-            document.addEventListener('gesturestart', (e) => e.preventDefault());
-            document.addEventListener('touchmove', (e) => e.preventDefault(), { passive: false });
 
             peanut.addEventListener('click', (event) => {
                 if (bossModeActive) return;
