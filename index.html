@@ -2,7 +2,7 @@
 <html lang="en">
 <head>
     <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no">
     <title>The Weird Peanut Clicker</title>
     <style>
         body {
@@ -68,8 +68,8 @@
             will-change: transform;
             position: relative;
             z-index: 100;
-            -webkit-user-drag: none; /* Prevent drag on some browsers */
-            user-select: none; /* Prevent selection on click */
+            -webkit-user-drag: none;
+            user-select: none;
         }
 
         #peanut:hover {
@@ -123,7 +123,7 @@
             width: 100%;
             height: 100%;
             background-color: rgba(0, 0, 0, 0.8);
-            display: none; /* Changed from 'none' to 'flex' by JS */
+            display: none;
             justify-content: center;
             align-items: center;
             flex-direction: column;
@@ -170,13 +170,31 @@
             transition: width 0.1s linear;
         }
 
-        .particle {
-            position: absolute;
-            pointer-events: none;
-            font-size: 1.5em;
-            animation: particleFadeOut 1s forwards;
-            opacity: 0;
-            z-index: 200;
+        .peanut-spin {
+            animation: spinPeanut 1s infinite linear;
+        }
+
+        .peanut-ghost-float {
+            animation: float 3s infinite ease-in-out;
+        }
+
+        .peanut-wink {
+            animation: wink 2s infinite ease-in-out;
+        }
+
+        @keyframes spinPeanut {
+            0% { transform: rotateY(0deg); }
+            100% { transform: rotateY(360deg); }
+        }
+
+        @keyframes float {
+            0%, 100% { transform: translateY(0) translateX(0); opacity: 1; }
+            50% { transform: translateY(-20px) translateX(10px); opacity: 0.8; }
+        }
+
+        @keyframes wink {
+            0%, 20%, 40%, 60%, 100% { transform: scale(1); }
+            50% { transform: scale(1, 0.8) translateY(10%); }
         }
 
         @keyframes bounce {
@@ -189,9 +207,9 @@
             50% { transform: scale(1.05); filter: drop-shadow(0 0 20px #ffcc00); }
         }
 
-        @keyframes float {
-            0%, 100% { transform: translateY(0) translateX(0); opacity: 1; }
-            50% { transform: translateY(-20px) translateX(10px); opacity: 0.8; }
+        @keyframes bossPulsate {
+            0%, 100% { transform: scale(1); }
+            50% { transform: scale(1.05); }
         }
 
         .floating-text {
@@ -203,22 +221,6 @@
             pointer-events: none;
             animation: float 1.5s ease-out forwards;
             z-index: 101;
-        }
-
-        .weird-effect {
-            animation: weirdShake 0.5s infinite;
-        }
-
-        @keyframes weirdShake {
-            0%, 100% { transform: translate(0, 0) rotate(0); }
-            25% { transform: translate(5px, 5px) rotate(2deg); }
-            50% { transform: translate(-5px, -5px) rotate(-2deg); }
-            75% { transform: translate(5px, -5px) rotate(2deg); }
-        }
-
-        @keyframes bossPulsate {
-            0%, 100% { transform: scale(1); }
-            50% { transform: scale(1.05); }
         }
     </style>
 </head>
@@ -275,6 +277,13 @@
             const bossHitSound = document.getElementById('bossHitSound');
             const bossDefeatSound = document.getElementById('bossDefeatSound');
 
+            const originalPeanutSrc = 'https://em-content.zobj.net/source/microsoft-teams/337/peanuts_1f95c.png';
+            const transformations = [
+                { src: 'https://em-content.zobj.net/source/microsoft-teams/337/jack-o-lantern_1f383.png', class: 'peanut-spin' },
+                { src: 'https://em-content.zobj.net/source/microsoft-teams/337/ghost_1f47b.png', class: 'peanut-ghost-float' },
+                { src: 'https://em-content.zobj.net/source/microsoft-teams/337/winking-face_1f609.png', class: 'peanut-wink' }
+            ];
+
             let score = 0;
             let clicks = 0;
             let comboCount = 0;
@@ -285,6 +294,10 @@
             let bossModeActive = false;
             let bossHealth = 0;
             const MAX_BOSS_HEALTH = 20;
+
+            // Prevent zooming on touch devices
+            document.addEventListener('gesturestart', (e) => e.preventDefault());
+            document.addEventListener('touchmove', (e) => e.preventDefault(), { passive: false });
 
             peanut.addEventListener('click', (event) => {
                 if (bossModeActive) return;
@@ -403,12 +416,20 @@
                     } 
                 },
                 { 
-                    message: "The peanut turns into a pumpkin!", 
+                    message: "The peanut changes form!", 
                     action: () => { 
-                        peanut.src = 'https://em-content.zobj.net/source/microsoft-teams/337/jack-o-lantern_1f383.png'; 
-                        showMessage('A pumpkin? How odd.'); 
+                        const originalClass = peanut.className;
+                        const randomTransformation = transformations[Math.floor(Math.random() * transformations.length)];
+                        
+                        peanut.src = randomTransformation.src;
+                        peanut.classList.add(randomTransformation.class);
+                        showMessage(`The peanut is now a ${randomTransformation.src.includes('pumpkin') ? 'Pumpkin!' : randomTransformation.src.includes('ghost') ? 'Ghost!' : 'Winking Face!'}`);
                         playSound(eventSound); 
-                        setTimeout(() => peanut.src = 'https://em-content.zobj.net/source/microsoft-teams/337/peanuts_1f95c.png', 5000); 
+                        
+                        setTimeout(() => {
+                            peanut.src = originalPeanutSrc;
+                            peanut.classList.remove(randomTransformation.class);
+                        }, 5000); 
                     } 
                 },
                 { 
@@ -419,21 +440,24 @@
                     } 
                 },
                 { 
-                    message: "The peanut starts to levitate!", 
+                    message: "A cosmic entity blesses your peanut! Permanent power-up!", 
                     action: () => { 
-                        peanut.style.animation = 'float 2s infinite ease-in-out'; 
+                        peanutPowerLevel++; 
+                        updateScore(); 
+                        showMessage(`Peanut Power Level increased to ${peanutPowerLevel}x!`); 
                         playSound(eventSound); 
-                        showMessage('Whoa! Floating peanut!');
-                        setTimeout(() => peanut.style.animation = 'none', 5000); 
                     } 
                 },
                 {
-                    message: "A cosmic entity blesses your peanut! Permanent power-up!",
+                    message: "The peanut becomes invincible to clicks!",
                     action: () => {
-                        peanutPowerLevel++;
-                        updateScore();
-                        showMessage(`Peanut Power Level increased to ${peanutPowerLevel}x!`);
-                        playSound(eventSound);
+                        peanut.style.pointerEvents = 'none';
+                        showMessage('You cannot click the peanut for 3 seconds!');
+                        playSound(negativeEventSound);
+                        setTimeout(() => {
+                            peanut.style.pointerEvents = 'auto';
+                            showMessage('Clicking returns to normal.');
+                        }, 3000);
                     }
                 }
             ];
