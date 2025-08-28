@@ -1,0 +1,211 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>The Weird Peanut Clicker</title>
+    <style>
+        body {
+            background-color: #f0f8ff; /* AliceBlue */
+            color: #333;
+            font-family: 'Comic Sans MS', cursive, sans-serif;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            height: 100vh;
+            margin: 0;
+            text-align: center;
+            overflow: hidden;
+            position: relative;
+        }
+
+        .game-container {
+            background-color: #fff;
+            padding: 30px;
+            border-radius: 20px;
+            box-shadow: 0 10px 20px rgba(0, 0, 0, 0.2);
+            border: 5px solid #ffcc00;
+            width: 90%;
+            max-width: 600px;
+            position: relative;
+            z-index: 10;
+        }
+
+        h1 {
+            color: #8b4513; /* SaddleBrown */
+            text-shadow: 2px 2px #ffe4b5; /* Moccasin */
+            font-size: 2.5em;
+            animation: bounce 1s infinite;
+        }
+
+        .stats-container {
+            display: flex;
+            justify-content: space-around;
+            font-size: 1.5em;
+            margin-bottom: 20px;
+            color: #4b0082; /* Indigo */
+        }
+
+        .peanut-container {
+            position: relative;
+            width: 100%;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            height: 250px;
+        }
+
+        #peanut {
+            cursor: pointer;
+            width: 200px;
+            height: auto;
+            transition: transform 0.1s ease-out, filter 0.2s ease-in-out;
+            will-change: transform;
+        }
+
+        #peanut:hover {
+            transform: scale(1.05) rotate(5deg);
+        }
+
+        #peanut:active {
+            transform: scale(0.95) rotate(-5deg);
+        }
+
+        .pulsate-glow {
+            animation: pulsate 2s infinite ease-in-out;
+        }
+
+        .message-container {
+            margin-top: 20px;
+            height: 50px;
+        }
+
+        #message {
+            font-size: 1.8em;
+            font-weight: bold;
+            color: #d2691e; /* Chocolate */
+            text-shadow: 1px 1px #fff;
+        }
+
+        /* Animations */
+        @keyframes bounce {
+            0%, 100% { transform: translateY(0); }
+            50% { transform: translateY(-10px); }
+        }
+
+        @keyframes pulsate {
+            0%, 100% { transform: scale(1); filter: drop-shadow(0 0 10px #ffcc00); }
+            50% { transform: scale(1.05); filter: drop-shadow(0 0 20px #ffcc00); }
+        }
+
+        @keyframes float {
+            0%, 100% { transform: translateY(0) translateX(0); opacity: 1; }
+            50% { transform: translateY(-20px) translateX(10px); opacity: 0.8; }
+        }
+
+        .floating-text {
+            position: absolute;
+            font-size: 2em;
+            font-weight: bold;
+            color: #8b0000; /* DarkRed */
+            text-shadow: 1px 1px #fff;
+            pointer-events: none;
+            animation: float 1.5s ease-out forwards;
+        }
+
+        .weird-effect {
+            animation: weirdShake 0.5s infinite;
+        }
+
+        @keyframes weirdShake {
+            0%, 100% { transform: translate(0, 0) rotate(0); }
+            25% { transform: translate(5px, 5px) rotate(2deg); }
+            50% { transform: translate(-5px, -5px) rotate(-2deg); }
+            75% { transform: translate(5px, -5px) rotate(2deg); }
+        }
+    </style>
+</head>
+<body>
+    <div class="game-container">
+        <h1>🥜 The Weird Peanut Clicker 🥜</h1>
+        <div class="stats-container">
+            <p>Score: <span id="score">0</span></p>
+            <p>Clicks: <span id="clicks">0</span></p>
+        </div>
+        <div class="peanut-container">
+            <img src="https://em-content.zobj.net/source/microsoft-teams/337/peanuts_1f95c.png" alt="A big peanut" id="peanut" class="pulsate-glow">
+        </div>
+        <div class="message-container">
+            <p id="message"></p>
+        </div>
+    </div>
+    <script>
+        document.addEventListener('DOMContentLoaded', () => {
+            const peanut = document.getElementById('peanut');
+            const scoreDisplay = document.getElementById('score');
+            const clicksDisplay = document.getElementById('clicks');
+            const messageDisplay = document.getElementById('message');
+            const gameContainer = document.querySelector('.game-container');
+
+            let score = 0;
+            let clicks = 0;
+
+            const weirdEvents = [
+                { message: "The peanut grows legs!", action: () => { peanut.style.width = '250px'; setTimeout(() => peanut.style.width = '200px', 2000); } },
+                { message: "Score doubles!", action: () => { score *= 2; updateScore(); } },
+                { message: "Oh no, you lose 10 score!", action: () => { score = Math.max(0, score - 10); updateScore(); } },
+                { message: "The peanut starts to glow!", action: () => { peanut.classList.add('weird-effect'); setTimeout(() => peanut.classList.remove('weird-effect'), 3000); } },
+                { message: "A mysterious voice whispers 'Peanut'", action: () => {  } },
+                { message: "Your clicks are now worth 2x!", action: () => { score += 2; updateScore(); createFloatingText('+2', event); } },
+                { message: "Nothing happens. Disappointing.", action: () => {  } }
+            ];
+
+            peanut.addEventListener('click', (event) => {
+                clicks++;
+                score++;
+                updateScore();
+                createFloatingText('+1', event);
+                
+                // Randomly trigger weird events
+                if (Math.random() < 0.15) { // 15% chance to trigger a weird event
+                    triggerWeirdEvent();
+                }
+            });
+
+            function updateScore() {
+                scoreDisplay.textContent = score;
+                clicksDisplay.textContent = clicks;
+            }
+
+            function createFloatingText(text, event) {
+                const floatingText = document.createElement('div');
+                floatingText.textContent = text;
+                floatingText.classList.add('floating-text');
+                
+                // Position the text near the click location
+                floatingText.style.left = `${event.clientX}px`;
+                floatingText.style.top = `${event.clientY}px`;
+                
+                document.body.appendChild(floatingText);
+                
+                setTimeout(() => {
+                    floatingText.remove();
+                }, 1500);
+            }
+
+            function triggerWeirdEvent() {
+                const randomEvent = weirdEvents[Math.floor(Math.random() * weirdEvents.length)];
+                showMessage(randomEvent.message);
+                randomEvent.action();
+            }
+
+            function showMessage(msg) {
+                messageDisplay.textContent = msg;
+                setTimeout(() => {
+                    messageDisplay.textContent = '';
+                }, 3000);
+            }
+        });
+    </script>
+</body>
+</html>
