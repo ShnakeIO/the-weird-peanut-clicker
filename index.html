@@ -3,10 +3,10 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>The SUPER Weird Peanut Clicker</title>
+    <title>The Weird Peanut Clicker</title>
     <style>
         body {
-            background-color: #f0f8ff; /* AliceBlue */
+            background-color: #f0f8ff;
             color: #333;
             font-family: 'Comic Sans MS', cursive, sans-serif;
             display: flex;
@@ -17,6 +17,7 @@
             text-align: center;
             overflow: hidden;
             position: relative;
+            perspective: 1000px;
         }
 
         .game-container {
@@ -29,6 +30,8 @@
             max-width: 600px;
             position: relative;
             z-index: 10;
+            overflow: hidden;
+            transition: background-color 1s ease-in-out;
         }
 
         h1 {
@@ -44,6 +47,8 @@
             font-size: 1.5em;
             margin-bottom: 20px;
             color: #4b0082;
+            position: relative;
+            z-index: 15;
         }
 
         .peanut-container {
@@ -61,6 +66,10 @@
             height: auto;
             transition: transform 0.1s ease-out, filter 0.2s ease-in-out;
             will-change: transform;
+            position: relative;
+            z-index: 100;
+            -webkit-user-drag: none; /* Prevent drag on some browsers */
+            user-select: none; /* Prevent selection on click */
         }
 
         #peanut:hover {
@@ -78,6 +87,8 @@
         .message-container {
             margin-top: 20px;
             height: 50px;
+            position: relative;
+            z-index: 15;
         }
 
         #message {
@@ -87,37 +98,87 @@
             text-shadow: 1px 1px #fff;
         }
 
-        /* --- New CSS for improved game --- */
         .combo-counter {
             position: absolute;
             top: 10px;
             right: 10px;
             font-size: 2em;
             font-weight: bold;
-            color: #ff4500; /* OrangeRed */
+            color: #ff4500;
             text-shadow: 2px 2px #fff;
             opacity: 0;
-            transition: opacity 0.5s ease-in-out;
+            transition: opacity 0.5s ease-in-out, transform 0.5s ease-in-out;
+            z-index: 20;
         }
 
         .combo-active {
             opacity: 1;
-        }
-        
-        .thief {
-            position: absolute;
-            bottom: -50px;
-            left: 50%;
-            transform: translateX(-50%);
-            animation: thiefSlideIn 2s forwards, thiefSteal 1s 2s forwards;
-            pointer-events: none;
-        }
-        
-        .thief-image {
-            width: 100px;
+            transform: scale(1.1);
         }
 
-        /* Animations */
+        .boss-peanut-container {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background-color: rgba(0, 0, 0, 0.8);
+            display: none; /* Changed from 'none' to 'flex' by JS */
+            justify-content: center;
+            align-items: center;
+            flex-direction: column;
+            z-index: 1000;
+            opacity: 0;
+            pointer-events: none;
+            transition: opacity 0.5s ease-in-out;
+        }
+
+        .boss-peanut-container.active {
+            display: flex;
+            opacity: 1;
+            pointer-events: all;
+        }
+
+        #bossPeanut {
+            width: 400px;
+            height: auto;
+            animation: bossPulsate 1s infinite alternate;
+            cursor: pointer;
+            border: 5px solid #ff0000;
+            border-radius: 50%;
+            box-shadow: 0 0 50px red, 0 0 20px darkred;
+            transition: transform 0.1s ease-out;
+        }
+
+        #bossPeanut:active {
+            transform: scale(0.95);
+        }
+
+        #bossHpBar {
+            width: 300px;
+            height: 20px;
+            background-color: grey;
+            margin-top: 20px;
+            border-radius: 10px;
+            overflow: hidden;
+        }
+
+        #bossHp {
+            height: 100%;
+            width: 100%;
+            background-color: limegreen;
+            transition: width 0.1s linear;
+        }
+
+        .particle {
+            position: absolute;
+            pointer-events: none;
+            font-size: 1.5em;
+            animation: particleFadeOut 1s forwards;
+            opacity: 0;
+            z-index: 200;
+        }
+
         @keyframes bounce {
             0%, 100% { transform: translateY(0); }
             50% { transform: translateY(-10px); }
@@ -141,6 +202,7 @@
             text-shadow: 1px 1px #fff;
             pointer-events: none;
             animation: float 1.5s ease-out forwards;
+            z-index: 101;
         }
 
         .weird-effect {
@@ -154,25 +216,19 @@
             75% { transform: translate(5px, -5px) rotate(2deg); }
         }
 
-        @keyframes thiefSlideIn {
-            0% { bottom: -50px; }
-            100% { bottom: 20px; }
+        @keyframes bossPulsate {
+            0%, 100% { transform: scale(1); }
+            50% { transform: scale(1.05); }
         }
-
-        @keyframes thiefSteal {
-            0% { transform: translateX(-50%); }
-            50% { transform: translateX(-50%) scale(1.2); }
-            100% { transform: translateX(-50%) translateY(-1000px); opacity: 0; }
-        }
-
     </style>
 </head>
 <body>
-    <div class="game-container">
-        <h1>🥜 The SUPER Weird Peanut Clicker 🥜</h1>
+    <div class="game-container" id="gameContainer">
+        <h1>🥜 The Weird Peanut Clicker 🥜</h1>
         <div class="stats-container">
             <p>Score: <span id="score">0</span></p>
             <p>Clicks: <span id="clicks">0</span></p>
+            <p>Power: <span id="powerLevel">1</span>x</p>
         </div>
         <div class="peanut-container">
             <img src="https://em-content.zobj.net/source/microsoft-teams/337/peanuts_1f95c.png" alt="A big peanut" id="peanut" class="pulsate-glow">
@@ -183,6 +239,21 @@
         <div id="comboCounter" class="combo-counter"></div>
     </div>
 
+    <div class="boss-peanut-container" id="bossPeanutContainer">
+        <h2>BOSS PEANUT ATTACKS!</h2>
+        <img src="https://em-content.zobj.net/source/microsoft-teams/337/peanuts_1f95c.png" alt="Giant Boss Peanut" id="bossPeanut">
+        <div id="bossHpBar"><div id="bossHp"></div></div>
+        <p id="bossMessage">Click the Boss Peanut to defeat it!</p>
+    </div>
+
+    <audio id="clickSound" src="https://assets.mixkit.co/sfx/preview/mixkit-fast-pop-click-1125.mp3"></audio>
+    <audio id="comboSound" src="https://assets.mixkit.co/sfx/preview/mixkit-game-bonus-chime-and-ding-1994.mp3"></audio>
+    <audio id="eventSound" src="https://assets.mixkit.co/sfx/preview/mixkit-retro-game-notification-sound-212.mp3"></audio>
+    <audio id="negativeEventSound" src="https://assets.mixkit.co/sfx/preview/mixkit-negative-game-buzz-306.mp3"></audio>
+    <audio id="bossSpawnSound" src="https://assets.mixkit.co/sfx/preview/mixkit-negative-game-impact-2096.mp3"></audio>
+    <audio id="bossHitSound" src="https://assets.mixkit.co/sfx/preview/mixkit-quick-punch-2166.mp3"></audio>
+    <audio id="bossDefeatSound" src="https://assets.mixkit.co/sfx/preview/mixkit-positive-game-over-tilt-2027.mp3"></audio>
+
     <script>
         document.addEventListener('DOMContentLoaded', () => {
             const peanut = document.getElementById('peanut');
@@ -190,41 +261,52 @@
             const clicksDisplay = document.getElementById('clicks');
             const messageDisplay = document.getElementById('message');
             const comboCounter = document.getElementById('comboCounter');
-            const gameContainer = document.querySelector('.game-container');
+            const powerLevelDisplay = document.getElementById('powerLevel');
+
+            const bossPeanutContainer = document.getElementById('bossPeanutContainer');
+            const bossPeanut = document.getElementById('bossPeanut');
+            const bossHp = document.getElementById('bossHp');
+
+            const clickSound = document.getElementById('clickSound');
+            const comboSound = document.getElementById('comboSound');
+            const eventSound = document.getElementById('eventSound');
+            const negativeEventSound = document.getElementById('negativeEventSound');
+            const bossSpawnSound = document.getElementById('bossSpawnSound');
+            const bossHitSound = document.getElementById('bossHitSound');
+            const bossDefeatSound = document.getElementById('bossDefeatSound');
 
             let score = 0;
             let clicks = 0;
             let comboCount = 0;
             let lastClickTime = Date.now();
             let clickMultiplier = 1;
+            let peanutPowerLevel = 1;
 
-            const weirdEvents = [
-                { message: "A tiny peanut army appears!", action: () => { score += 50; updateScore(); showMessage('+50 score from the army!'); } },
-                { message: "A mysterious force multiplies your score!", action: () => { score *= 2; updateScore(); } },
-                { message: "Oh no! A Peanut Thief steals some of your score!", action: () => { score = Math.max(0, score - 50); updateScore(); showThief(); } },
-                { message: "The peanut power-up is active! Clicks are 5x!", action: () => { clickMultiplier = 5; showMessage('Clicks are 5x for 5 seconds!'); setTimeout(() => { clickMultiplier = 1; }, 5000); } },
-                { message: "The peanut turns into a pumpkin!", action: () => { peanut.src = 'https://em-content.zobj.net/source/microsoft-teams/337/jack-o-lantern_1f383.png'; showMessage('A pumpkin? How odd.'); setTimeout(() => peanut.src = 'https://em-content.zobj.net/source/microsoft-teams/337/peanuts_1f95c.png', 5000); } },
-                { message: "The game glitches! You gain 100 clicks!", action: () => { clicks += 100; updateScore(); } },
-                { message: "The peanut starts to levitate!", action: () => { peanut.style.animation = 'float 2s infinite ease-in-out'; setTimeout(() => peanut.style.animation = 'none', 5000); } }
-            ];
+            let bossModeActive = false;
+            let bossHealth = 0;
+            const MAX_BOSS_HEALTH = 20;
 
             peanut.addEventListener('click', (event) => {
+                if (bossModeActive) return;
+                
+                playSound(clickSound);
                 const currentTime = Date.now();
                 
-                // Combo Logic
-                if (currentTime - lastClickTime < 300) { // 300ms for a combo
+                if (currentTime - lastClickTime < 300) {
                     comboCount++;
+                    if (comboCount > 2 && comboCount % 5 === 0) {
+                        playSound(comboSound);
+                    }
                 } else {
                     comboCount = 0;
                 }
                 lastClickTime = currentTime;
 
-                let points = 1 * clickMultiplier;
+                let points = peanutPowerLevel * clickMultiplier;
                 
-                // Combo bonus
                 if (comboCount > 2) {
-                    points += Math.floor(comboCount / 5);
-                    comboCounter.textContent = `COMBO x${comboCount}`;
+                    points += Math.floor(comboCount / 3) * peanutPowerLevel;
+                    comboCounter.textContent = `COMBO x${comboCount} (+${Math.floor(comboCount / 3) * peanutPowerLevel})`;
                     comboCounter.classList.add('combo-active');
                 } else {
                     comboCounter.classList.remove('combo-active');
@@ -235,21 +317,40 @@
                 updateScore();
                 createFloatingText(`+${points}`, event);
                 
-                // Randomly trigger weird events
-                if (Math.random() < 0.1) { // 10% chance
+                if (Math.random() < 0.08) {
                     triggerWeirdEvent();
+                }
+
+                if (!bossModeActive && score > 500 && Math.random() < 0.005) {
+                    startBossFight();
+                }
+            });
+
+            bossPeanut.addEventListener('click', (event) => {
+                if (!bossModeActive) return;
+
+                playSound(bossHitSound);
+                bossHealth--;
+                updateBossHpBar();
+                createFloatingText('💥', event, '#ff0000', '3em');
+
+                if (bossHealth <= 0) {
+                    defeatBoss();
                 }
             });
 
             function updateScore() {
                 scoreDisplay.textContent = score;
                 clicksDisplay.textContent = clicks;
+                powerLevelDisplay.textContent = peanutPowerLevel;
             }
 
-            function createFloatingText(text, event) {
+            function createFloatingText(text, event, color = '#8b0000', fontSize = '2em') {
                 const floatingText = document.createElement('div');
                 floatingText.textContent = text;
                 floatingText.classList.add('floating-text');
+                floatingText.style.color = color;
+                floatingText.style.fontSize = fontSize;
                 
                 floatingText.style.left = `${event.clientX}px`;
                 floatingText.style.top = `${event.clientY}px`;
@@ -261,11 +362,81 @@
                 }, 1500);
             }
 
-            function triggerWeirdEvent() {
-                const randomEvent = weirdEvents[Math.floor(Math.random() * weirdEvents.length)];
-                showMessage(randomEvent.message);
-                randomEvent.action();
+            function playSound(audioElement) {
+                if (audioElement) {
+                    audioElement.currentTime = 0;
+                    audioElement.play().catch(e => console.log("Audio play failed:", e));
+                }
             }
+
+            const weirdEvents = [
+                { 
+                    message: "A tiny peanut army appears!", 
+                    action: () => { 
+                        score += 50 * peanutPowerLevel; updateScore(); showMessage('+50 score from the army!'); 
+                        playSound(eventSound);
+                    } 
+                },
+                { 
+                    message: "A mysterious force multiplies your score!", 
+                    action: () => { 
+                        score *= 2; updateScore(); 
+                        playSound(eventSound); 
+                    } 
+                },
+                { 
+                    message: "Oh no! A Peanut Thief steals some of your score!", 
+                    action: () => { 
+                        let stolen = Math.min(score, 50 * peanutPowerLevel);
+                        score = Math.max(0, score - stolen); 
+                        updateScore(); 
+                        showMessage(`-${stolen} score stolen by the thief!`); 
+                        playSound(negativeEventSound); 
+                    } 
+                },
+                { 
+                    message: "The peanut power-up is active! Clicks are 5x!", 
+                    action: () => { 
+                        clickMultiplier = 5; showMessage('Clicks are 5x for 5 seconds!'); 
+                        playSound(eventSound); 
+                        setTimeout(() => { clickMultiplier = 1; showMessage('Power-up faded.'); }, 5000); 
+                    } 
+                },
+                { 
+                    message: "The peanut turns into a pumpkin!", 
+                    action: () => { 
+                        peanut.src = 'https://em-content.zobj.net/source/microsoft-teams/337/jack-o-lantern_1f383.png'; 
+                        showMessage('A pumpkin? How odd.'); 
+                        playSound(eventSound); 
+                        setTimeout(() => peanut.src = 'https://em-content.zobj.net/source/microsoft-teams/337/peanuts_1f95c.png', 5000); 
+                    } 
+                },
+                { 
+                    message: "The game glitches! You gain 100 clicks!", 
+                    action: () => { 
+                        clicks += 100; updateScore(); showMessage('+100 Clicks Glitch!'); 
+                        playSound(eventSound); 
+                    } 
+                },
+                { 
+                    message: "The peanut starts to levitate!", 
+                    action: () => { 
+                        peanut.style.animation = 'float 2s infinite ease-in-out'; 
+                        playSound(eventSound); 
+                        showMessage('Whoa! Floating peanut!');
+                        setTimeout(() => peanut.style.animation = 'none', 5000); 
+                    } 
+                },
+                {
+                    message: "A cosmic entity blesses your peanut! Permanent power-up!",
+                    action: () => {
+                        peanutPowerLevel++;
+                        updateScore();
+                        showMessage(`Peanut Power Level increased to ${peanutPowerLevel}x!`);
+                        playSound(eventSound);
+                    }
+                }
+            ];
 
             function showMessage(msg) {
                 messageDisplay.textContent = msg;
@@ -274,16 +445,45 @@
                 }, 4000);
             }
 
-            function showThief() {
-                const thief = document.createElement('img');
-                thief.src = 'https://em-content.zobj.net/source/microsoft-teams/337/mouse_1f401.png'; // Using a mouse for the thief
-                thief.classList.add('thief', 'thief-image');
-                gameContainer.appendChild(thief);
-
-                setTimeout(() => {
-                    thief.remove();
-                }, 4000);
+            function triggerWeirdEvent() {
+                const randomEvent = weirdEvents[Math.floor(Math.random() * weirdEvents.length)];
+                showMessage(randomEvent.message);
+                randomEvent.action();
             }
+
+            function startBossFight() {
+                bossModeActive = true;
+                bossHealth = MAX_BOSS_HEALTH;
+                updateBossHpBar();
+                bossPeanutContainer.classList.add('active');
+                showMessage('A HUGE BOSS PEANUT APPEARS! DEFEAT IT!');
+                playSound(bossSpawnSound);
+                peanut.style.pointerEvents = 'none';
+            }
+
+            function updateBossHpBar() {
+                const hpPercent = (bossHealth / MAX_BOSS_HEALTH) * 100;
+                bossHp.style.width = `${hpPercent}%`;
+                bossHp.style.backgroundColor = hpPercent > 50 ? 'limegreen' : (hpPercent > 20 ? 'orange' : 'red');
+            }
+
+            function defeatBoss() {
+                bossModeActive = false;
+                bossPeanutContainer.classList.remove('active');
+                peanut.style.pointerEvents = 'auto';
+
+                const bossReward = 500 * peanutPowerLevel;
+                score += bossReward;
+                peanutPowerLevel++;
+                updateScore();
+                playSound(bossDefeatSound);
+                showMessage(`BOSS PEANUT DEFEATED! You gained ${bossReward} score and +1 Peanut Power!`);
+                
+                bossHp.style.width = '100%';
+                bossHp.style.backgroundColor = 'limegreen';
+            }
+
+            updateScore();
         });
     </script>
 </body>
